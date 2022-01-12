@@ -1,0 +1,24 @@
+'''
+Day: 001
+Author: Yeshwanth L M
+Description: This code is used to get the list of AWS EC2 Instance Present in all AWS Regions by using Boto3 
+'''
+import boto3
+
+#Piece of code to list all the available regions
+session = boto3.Session(profile_name="default", region_name="us-east-2")
+ec2_con_cli = session.client("ec2")
+all_regions = ec2_con_cli.describe_regions()
+list_of_regions=[]
+for each_reg in all_regions['Regions']:
+    #print(each_reg['RegionName'])
+    list_of_regions.append(each_reg['RegionName'])
+  
+
+#Piece of code to get the Instance Id 
+for each_reg in list_of_regions:
+    session = boto3.Session(profile_name="default", region_name=each_reg)
+    ec2_con = session.client("ec2")
+    for each_in in ec2_con.describe_instances()['Reservations']:
+        for details in each_in['Instances']:
+            print(details['InstanceId'])
