@@ -1,4 +1,5 @@
 '''
+Day: 003
 Author: Yeshwanth L M
 Description: This code is used to get the Public DNS and Public IP for the AWS EC2 Instance Id specified by the user.
 
