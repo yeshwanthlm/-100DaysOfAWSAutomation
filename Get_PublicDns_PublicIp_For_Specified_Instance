@@ -1,0 +1,33 @@
+'''
+Author: Yeshwanth L M
+Description: This code is used to get the Public DNS and Public IP for the AWS EC2 Instance Id specified by the user.
+
+'''
+import boto3
+from pprint import pprint
+session = boto3.Session(profile_name="default", region_name="us-east-2")
+ec2_con_cli = session.client("ec2")
+
+# Get the Instance Id from the User
+Instance_Id = input("Enter the Instance Id: ")
+
+# Get all the Instances present in that particular region (Here it is: us-east-2)
+all_instances = []
+ec2_cons = session.client("ec2")
+for each_in in ec2_con_cli.describe_instances()['Reservations']:
+    for details in each_in['Instances']:
+        all_instances.append(details['InstanceId'])
+
+# If the user specified Instance is present then, print Publice DNS and the Public Ip of the Instance
+if Instance_Id in all_instances:
+    response = ec2_con_cli.describe_instances(
+        InstanceIds=[
+            Instance_Id,
+            ],
+    )['Reservations']
+    for id in response:
+        for dns in id['Instances']:
+            print("The Public DNS and the Public Ip of {} is {} and {}" .format(Instance_Id, dns['PublicDnsName'], dns['PublicIpAddress']))
+        
+else:
+    print("Please enter the valid EC2 Instance Id!")
