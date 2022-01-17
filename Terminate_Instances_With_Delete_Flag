@@ -1,0 +1,44 @@
+'''
+Day: 006
+Author: Yeshwanth L M
+Description: This code is used terminate all the EC2 Instances which are running and has Delete tag flag.
+
+'''
+import boto3
+import sys
+from pprint import pprint
+
+session = boto3.Session(profile_name="default", region_name="us-east-2")
+ec2_con_cli = session.client("ec2")
+
+print("This scipt is used to terminate the Instance which has Delete tag")
+
+#Get all the instances which are in "Running" state and has "Delete": "True" tag associated
+response = ec2_con_cli.describe_instances(
+    Filters=[
+        {'Name': 'instance-state-name', 'Values': ['running']},
+        {'Name': 'tag:Delete', 'Values': ['True']},
+        ],
+)['Reservations']
+
+#Get the confirmation from the User to delete the instances in "Running" state and has "Delete": "True" tag associated. If not exit out of the program
+for ins in response:
+    for item in ins['Instances']:
+        print('The instance, {} has Delete tag associated'.format(item['InstanceId']))
+        temp = input("Type 'yes' if you want to terminate the instance: ")
+        if temp=="yes":
+            ec2_con_cli = session.client("ec2")
+            response = ec2_con_cli.terminate_instances(
+                InstanceIds=[
+                    item['InstanceId'],
+                    ],
+            )
+            waiter = ec2_con_cli.get_waiter('instance_terminated')
+            waiter.wait(
+                InstanceIds=[
+                    item['InstanceId'],
+                    ],
+            )
+            print("The instance is terminated!")
+        else:
+            sys.exit("The Instance is not terminated!")
