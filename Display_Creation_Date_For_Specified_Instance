@@ -1,0 +1,41 @@
+'''
+Day: 008
+Author: Yeshwanth L M
+Description: This script is used to display creation date for the instance specified by the user. 
+'''
+#import all the required modules
+import boto3
+import sys
+
+session = boto3.Session(profile_name="default", region_name="us-east-2")
+ec2_con_cli = session.client("ec2")
+
+# Get the Instance Id from the User
+print("This script is used to display creation date for the instance specified by the user...")
+specified_instance = input("Enter the Instance Id: ")
+
+# Get all the regions available in AWS
+all_regions = []
+regions = ec2_con_cli.describe_regions()['Regions']
+for each_region in regions:
+    all_regions.append(each_region['RegionName'])
+
+# Get all the Instances present all the regions
+ec2_con_cli = session.client("ec2")
+all_instances = []
+instances = ec2_con_cli.describe_instances()['Reservations']
+for each_instances in instances:
+    for instance_details in each_instances['Instances']:
+        all_instances.append(instance_details['InstanceId'])
+
+#If the specified Instance Id is present then print the Launch Time of the specified Instance Id.
+if specified_instance in all_instances:
+    ec2_con_cli = session.client("ec2")
+    f1={'Name': 'instance-state-name', 'Values': ['running']}
+    instances = ec2_con_cli.describe_instances(InstanceIds=[specified_instance])['Reservations']
+    for each in instances:
+        for launch_time in each['Instances']:
+            print(launch_time['LaunchTime'])
+
+else:
+    sys.exit("Please enter the valid Instance Id!")
