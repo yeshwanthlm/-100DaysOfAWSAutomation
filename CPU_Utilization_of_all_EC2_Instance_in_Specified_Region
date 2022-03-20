@@ -1,0 +1,70 @@
+'''
+Author: Yeshwanth L M
+Description: This code is used to get the CPU Utilization of all the AWS EC2 Instance Present in the user specified AWS Region by using Boto3 
+'''
+import boto3
+import sys
+from datetime import datetime, timedelta
+import csv
+import pandas as pd
+
+#Piece of code to list all the available regions
+session = boto3.Session(profile_name="default",)
+ec2_con_cli = session.client("ec2")
+all_regions = ec2_con_cli.describe_regions()
+list_of_regions=[]
+for each_reg in all_regions['Regions']:
+    #print(each_reg['RegionName'])
+    list_of_regions.append(each_reg['RegionName'])
+    print(each_reg['RegionName'])
+
+#Piece of code which will allow user to select a desired region. 
+desired_region = input("Enter the Region name: ")
+
+#Checks if the entered region is valid and fetches the Average CPU Utilization of all the EC2 Instance in the specified region
+if desired_region not in list_of_regions:
+    print("Please select the correct region name!")
+else:
+    print("Thank You! Please wait while we fetch CPU Utilization of all the instances in {}" .format(desired_region))
+
+#List of EC2 Instances in that region
+ec2_list=[]
+session = boto3.Session(profile_name="default", region_name=desired_region)
+ec2_con = session.client("ec2")
+f1={"Name": "instance-state-name", "Values":['running']}
+#f2={"Name": "platform", "Values":['windows']}
+for each_in in ec2_con.describe_instances(Filters=[f1,])['Reservations']:
+    for details in each_in['Instances']:
+        ec2_list.append(details['InstanceId'])
+
+#Average CPU Utilization of all the instances
+cpu_list=[]
+CW_Con = boto3.client('cloudwatch')
+for every in ec2_list:
+    response = CW_Con.get_metric_statistics(
+        Namespace='AWS/EC2',
+        MetricName='CPUUtilization',
+        Dimensions=[
+            {
+                'Name': 'InstanceId',
+                'Value': every
+            },
+        ],
+        StartTime=datetime(2022, 3, 20) - timedelta(seconds=600),
+        EndTime=datetime(2022, 3, 21),
+        Period=86400,
+        Statistics=[
+            'Average',
+        ],
+        Unit='Percent'
+    )
+    
+    for cpu in response['Datapoints']:
+        if 'Average' in cpu:
+            print("{} : {}".format(every, cpu['Average']))
+            cpu_list.append(cpu['Average'])
+
+#Writing all the values in to excel sheet
+df = pd.DataFrame({'InstanceId': ec2_list, 'CpuAverage': cpu_list})
+df.to_csv('ec2-cpu-details.csv', index=False)
+print("Check ec2-cpu-details.csv for more details!!!")
